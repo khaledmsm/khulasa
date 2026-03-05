@@ -116,15 +116,32 @@ Respond ONLY with this JSON (no markdown, no extra text):
   "read_time_summary": "time to read summary"
 }}"""
 
-    try:
-        message = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = message.content[0].text
-        text = re.sub(r"```json\s*|```", "", text).strip()
-        return json.loads(text)
+    MODELS_TO_TRY = [
+        "claude-sonnet-4-5-20250929",
+        "claude-3-5-sonnet-20241022", 
+        "claude-3-haiku-20240307",
+    ]
+    
+    for model_name in MODELS_TO_TRY:
+        try:
+            message = client.messages.create(
+                model=model_name,
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            text = message.content[0].text
+            text = re.sub(r"```json\s*|```", "", text).strip()
+            print(f"  ✅ Used model: {model_name}")
+            return json.loads(text)
+        except Exception as e:
+            error_msg = str(e)
+            print(f"  ⚠️ Model {model_name} failed: {error_msg[:80]}")
+            if "model" not in error_msg.lower() and "not_found" not in error_msg.lower():
+                # Not a model error, don't try other models
+                break
+            continue
+    
+    # All models failed
     except Exception as e:
         error_msg = str(e)
         print(f"  ⚠️ Summarization error: {error_msg}")
