@@ -118,7 +118,7 @@ Respond ONLY with this JSON (no markdown, no extra text):
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-5-20250514",
+            model="claude-sonnet-4-5-20250514",  # or "claude-3-5-sonnet-20241022" if this fails
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -126,11 +126,27 @@ Respond ONLY with this JSON (no markdown, no extra text):
         text = re.sub(r"```json\s*|```", "", text).strip()
         return json.loads(text)
     except Exception as e:
-        print(f"  ⚠️ Summarization error: {e}")
+        error_msg = str(e)
+        print(f"  ⚠️ Summarization error: {error_msg}")
+        
+        # Give helpful error messages
+        if "credit" in error_msg.lower() or "billing" in error_msg.lower():
+            en_msg = "Anthropic API needs credit. Add funds at console.anthropic.com/billing"
+            ar_msg = "API يحتاج رصيد. أضف رصيد في console.anthropic.com/billing"
+        elif "invalid" in error_msg.lower() and "key" in error_msg.lower():
+            en_msg = "Invalid API key. Check ANTHROPIC_API_KEY in Render environment variables."
+            ar_msg = "مفتاح API غير صالح. تحقق من المتغيرات في Render."
+        elif "model" in error_msg.lower():
+            en_msg = "Model not available. Updating..."
+            ar_msg = "النموذج غير متاح. جاري التحديث..."
+        else:
+            en_msg = f"Error: {error_msg[:150]}"
+            ar_msg = "حدث خطأ في إنشاء الملخص. حاول مرة أخرى."
+        
         return {
             "title_clean": content["title"],
-            "summary_en": f"Error generating summary: {str(e)[:100]}",
-            "summary_ar": "حدث خطأ في إنشاء الملخص. حاول مرة أخرى.",
+            "summary_en": en_msg,
+            "summary_ar": ar_msg,
             "content_type": "link",
             "read_time_original": "?",
             "read_time_summary": "~1 min",
@@ -141,6 +157,14 @@ Respond ONLY with this JSON (no markdown, no extra text):
 class KhulasaHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(PWA_DIR), **kwargs)
+
+    def do_GET(self):
+        # Handle favicon requests gracefully
+        if self.path == '/favicon.ico':
+            self.send_response(204)
+            self.end_headers()
+            return
+        return super().do_GET()
 
     def do_POST(self):
         if self.path == "/summarize":
@@ -189,9 +213,15 @@ class KhulasaHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):
         """Quieter logging — only show non-static requests."""
-        path = args[0].split()[1] if args else ""
-        if path.startswith("/summarize") or path == "/":
-            super().log_message(format, *args)
+        try:
+            if args and isinstance(args[0], str):
+                path = args[0].split()[1] if " " in args[0] else args[0]
+                if path.startswith("/summarize") or path == "/":
+                    super().log_message(format, *args)
+            else:
+                super().log_message(format, *args)
+        except Exception:
+            pass
 
 
 # ─── Get Local IP ─────────────────────────────────────────────────
