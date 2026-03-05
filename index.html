@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Khulasa">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>Khulasa — خلاصة</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #141419;
+      --bg-card-hover: #1a1a22;
+      --bg-elevated: #1e1e28;
+      --accent: #ff6b35;
+      --accent-glow: rgba(255, 107, 53, 0.15);
+      --text: #e8e6e1;
+      --text-secondary: #7a7880;
+      --text-muted: #4a4850;
+      --border: rgba(255, 255, 255, 0.06);
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --radius: 16px;
+      --font: 'DM Sans', 'Noto Sans Arabic', -apple-system, sans-serif;
+      --font-display: 'DM Serif Display', serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .app {
+      max-width: 500px;
+      margin: 0 auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-top: var(--safe-top);
+      padding-bottom: calc(80px + var(--safe-bottom));
+    }
+
+    /* ─── Header ─── */
+    .header {
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 400;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .logo-badge {
+      font-family: var(--font);
+      font-size: 9px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+      letter-spacing: 1px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:active { transform: scale(0.92); background: var(--bg-elevated); }
+
+    /* ─── Stats ─── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    /* ─── Filters ─── */
+    .filters {
+      display: flex;
+      gap: 6px;
+      padding: 14px 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filters::-webkit-scrollbar { display: none; }
+
+    .filter-btn {
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+    }
+
+    .filter-btn:active { transform: scale(0.95); }
+
+    /* ─── Content List ─── */
+    .content-list {
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .content-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 16px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    }
+
+    .content-card:active { transform: scale(0.98); }
+    .content-card.expanded { border-color: rgba(255, 107, 53, 0.2); background: var(--bg-card-hover); }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header { display: flex; gap: 12px; align-items: flex-start; }
+
+    .platform-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .platform-icon.tiktok { background: rgba(255, 45, 85, 0.1); color: #ff2d55; }
+    .platform-icon.x { background: rgba(255, 255, 255, 0.06); color: #e8e6e1; }
+    .platform-icon.reddit { background: rgba(255, 69, 0, 0.1); color: #ff4500; }
+    .platform-icon.youtube { background: rgba(255, 0, 0, 0.1); color: #ff0000; }
+    .platform-icon.other { background: rgba(99, 102, 241, 0.1); color: #818cf8; }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .card-platform {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .card-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-dot.unread { background: var(--accent); }
+    .status-dot.read { background: var(--green); }
+    .status-dot.reminded { background: var(--yellow); }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .card-info {
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .card-info span { white-space: nowrap; }
+
+    /* ─── Expanded Summary ─── */
+    .summary-panel {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .summary-section { margin-bottom: 16px; }
+
+    .summary-lang {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .summary-text {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    .summary-text.ar {
+      direction: rtl;
+      text-align: right;
+      font-family: 'Noto Sans Arabic', sans-serif;
+      line-height: 1.9;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn-action {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .btn-action:active { transform: scale(0.96); }
+
+    .btn-action.primary {
+      background: var(--green);
+      color: #0a0a0f;
+      border-color: var(--green);
+    }
+
+    /* ─── Bottom Nav ─── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 500px;
+      background: rgba(10, 10, 15, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 8px 16px;
+      padding-bottom: calc(8px + var(--safe-bottom));
+      z-index: 100;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 0;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      font-family: var(--font);
+      font-size: 10px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .nav-item.active { color: var(--accent); }
+    .nav-item .nav-icon { font-size: 22px; }
+
+    /* ─── Add Link Modal ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 500px;
+      background: var(--bg-elevated);
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px;
+      padding-bottom: calc(28px + var(--safe-bottom));
+      animation: slideModal 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideModal {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--text-muted);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+
+    .modal h2 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+
+    .modal p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus { border-color: var(--accent); }
+    .input-field::placeholder { color: var(--text-muted); }
+
+    .reminder-options {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .reminder-opt {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .reminder-opt.active {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-submit:active { transform: scale(0.98); opacity: 0.9; }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── Settings View ─── */
+    .settings-view {
+      padding: 20px;
+    }
+
+    .settings-view h2 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      margin-bottom: 24px;
+    }
+
+    .setting-group {
+      margin-bottom: 24px;
+    }
+
+    .setting-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 6px;
+    }
+
+    .setting-row span { font-size: 14px; color: var(--text); }
+
+    .toggle {
+      width: 48px;
+      height: 28px;
+      border-radius: 14px;
+      background: var(--text-muted);
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+      border: none;
+    }
+
+    .toggle.on { background: var(--accent); }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 11px;
+      background: #fff;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+    }
+
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* ─── Empty State ─── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .empty-sub { font-size: 14px; color: var(--text-muted); }
+
+    /* ─── Loading Skeleton ─── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-elevated) 50%, var(--bg-card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: fixed;
+      top: calc(20px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: var(--bg-elevated);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      z-index: 300;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="app" id="app"></div>
+
+  <script>
+    // ─── State Management ────────────────────────────────────────
+    const APP_STATE = {
+      items: [],
+      view: 'home', // home, settings
+      filter: 'all',
+      expandedId: null,
+      showAddModal: false,
+      lang: 'en',
+      settings: {
+        reminderHours: 4,
+        autoSummarize: true,
+        bilingualSummary: true,
+      },
+    };
+
+    // API base URL — change this to your server
+    const API_BASE = localStorage.getItem('khulasa_api') || window.location.origin;
+
+    // ─── Data Persistence ────────────────────────────────────────
+    function loadItems() {
+      try {
+        const saved = localStorage.getItem('khulasa_items');
+        if (saved) APP_STATE.items = JSON.parse(saved);
+      } catch (e) {}
+    }
+
+    function saveItems() {
+      localStorage.setItem('khulasa_items', JSON.stringify(APP_STATE.items));
+    }
+
+    function loadSettings() {
+      try {
+        const saved = localStorage.getItem('khulasa_settings');
+        if (saved) APP_STATE.settings = { ...APP_STATE.settings, ...JSON.parse(saved) };
+      } catch (e) {}
+    }
+
+    function saveSettings() {
+      localStorage.setItem('khulasa_settings', JSON.stringify(APP_STATE.settings));
+    }
+
+    // ─── Demo Data ───────────────────────────────────────────────
+    function seedDemoData() {
+      if (APP_STATE.items.length > 0) return;
+      APP_STATE.items = [
+        {
+          id: 'd1',
+          url: 'https://x.com/paulgraham/status/998877',
+          platform: 'X',
+          title: 'Why most VCs miss the best deals',
+          savedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+          status: 'unread',
+          reminderAt: new Date(Date.now() + 3600000).toISOString(),
+          summaryEn: 'Essay arguing that the best startup investments look "weird" at first. VCs trained on pattern matching miss outliers. Three examples given of billion-dollar companies rejected by 30+ investors. The best filter is founder obsession, not market size.',
+          summaryAr: 'مقال يرى أن أفضل الاستثمارات في الشركات الناشئة تبدو "غريبة" في البداية. المستثمرون المُدرَّبون على مطابقة الأنماط يفوّتون الحالات الاستثنائية. أفضل معيار هو هوس المؤسس، وليس حجم السوق.',
+          contentType: 'thread',
+          readTime: '5 min',
+        },
+        {
+          id: 'd2',
+          url: 'https://tiktok.com/@marketingpro/video/456',
+          platform: 'TikTok',
+          title: 'Snapchat Ads 2026: What changed and what works',
+          savedAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+          status: 'reminded',
+          reminderAt: new Date(Date.now() - 3600000).toISOString(),
+          summaryEn: 'Major Snapchat ads update: AI-powered targeting replaces interest-based system. Story ads beat spotlight for e-commerce with 3.2x ROAS. Use vertical video with text in first 2 seconds. Start at $50/day minimum.',
+          summaryAr: 'تحديث إعلانات سناب شات: الاستهداف بالذكاء الاصطناعي يحل محل النظام القديم. إعلانات القصص أفضل للتجارة الإلكترونية بعائد ٣.٢ مرة. استخدم فيديو عمودي مع نص في أول ثانيتين. ابدأ بـ ٥٠ دولاراً يومياً.',
+          contentType: 'video',
+          readTime: '6 min → 1 min',
+        },
+        {
+          id: 'd3',
+          url: 'https://reddit.com/r/ecommerce/comments/xyz',
+          platform: 'Reddit',
+          title: 'Complete dead stock clearance strategy for e-commerce',
+          savedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+          status: 'read',
+          reminderAt: null,
+          summaryEn: 'Detailed playbook for clearing dead inventory: bundle slow movers with best sellers, use flash sales with urgency timers, partner with liquidation marketplaces, and offer loyalty points instead of deep discounts to protect brand perception.',
+          summaryAr: 'دليل شامل لتصفية المخزون الراكد: اجمع المنتجات البطيئة مع الأكثر مبيعاً، استخدم تخفيضات سريعة مع مؤقت، تعاون مع منصات التصفية، وقدّم نقاط ولاء بدلاً من خصومات كبيرة للحفاظ على صورة العلامة التجارية.',
+          contentType: 'post',
+          readTime: '12 min → 2 min',
+        },
+        {
+          id: 'd4',
+          url: 'https://tiktok.com/@shopifyhacks/video/789',
+          platform: 'TikTok',
+          title: 'How to scale your e-commerce store to $1M ARR',
+          savedAt: new Date(Date.now() - 86400000).toISOString(),
+          status: 'unread',
+          reminderAt: new Date(Date.now() + 7200000).toISOString(),
+          summaryEn: '5 strategies for scaling: focus on AOV over traffic, use post-purchase upsells, build SMS list from day one, leverage UGC over polished ads, obsess over unit economics. Real examples from $10K to $83K/month growth.',
+          summaryAr: '٥ استراتيجيات للتوسع: ركّز على متوسط قيمة الطلب بدل الزيارات، استخدم عروض ما بعد الشراء، ابنِ قائمة رسائل نصية من اليوم الأول، اعتمد على محتوى المستخدمين، وركّز على اقتصاديات الوحدة.',
+          contentType: 'video',
+          readTime: '12 min → 2 min',
+        },
+      ];
+      saveItems();
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────
+    function timeAgo(dateStr) {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
+
+    function getPlatformClass(p) {
+      return (p || '').toLowerCase().replace(/[^a-z]/g, '') || 'other';
+    }
+
+    function getPlatformIcon(p) {
+      const icons = { TikTok: '▶', X: '𝕏', Reddit: '◉', YouTube: '▶', Instagram: '◎' };
+      return icons[p] || '🔗';
+    }
+
+    function getStatusColor(s) {
+      const colors = { unread: 'var(--accent)', read: 'var(--green)', reminded: 'var(--yellow)' };
+      return colors[s] || 'var(--text-muted)';
+    }
+
+    function getStatusLabel(s) {
+      const labels = { unread: 'Unread', read: 'Read', reminded: 'Reminded' };
+      return labels[s] || s;
+    }
+
+    // ─── Toast ───────────────────────────────────────────────────
+    function showToast(message) {
+      let toast = document.querySelector('.toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // ─── API / Summary Engine ────────────────────────────────────
+    async function fetchAndSummarize(url) {
+      // Try to hit local backend first
+      try {
+        const resp = await fetch(`${API_BASE}/summarize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        if (resp.ok) return await resp.json();
+      } catch (e) {
+        console.log('Backend not available, using local placeholder');
+      }
+
+      // Fallback: create a placeholder item (user can re-process later)
+      const platform = url.includes('tiktok') ? 'TikTok'
+        : url.includes('reddit') ? 'Reddit'
+        : (url.includes('x.com') || url.includes('twitter')) ? 'X'
+        : url.includes('youtube') || url.includes('youtu.be') ? 'YouTube'
+        : 'Other';
+
+      return {
+        title: `Saved from ${platform}`,
+        platform,
+        summaryEn: 'Summary will be generated when the backend is running. Start your Python server to enable AI summaries.',
+        summaryAr: 'سيتم إنشاء الملخص عند تشغيل الخادم. شغّل سيرفر Python لتفعيل الملخصات الذكية.',
+        contentType: 'link',
+        readTime: '—',
+      };
+    }
+
+    // ─── Render Engine ───────────────────────────────────────────
+    function render() {
+      const app = document.getElementById('app');
+      const { view } = APP_STATE;
+
+      if (view === 'settings') {
+        app.innerHTML = renderSettings();
+      } else {
+        app.innerHTML = renderHome();
+      }
+
+      app.innerHTML += renderBottomNav();
+
+      if (APP_STATE.showAddModal) {
+        app.innerHTML += renderAddModal();
+      }
+
+      attachEvents();
+    }
+
+    function renderHome() {
+      const { items, filter, expandedId } = APP_STATE;
+      const filtered = items.filter(i => {
+        if (filter === 'all') return true;
+        if (filter === 'unread') return i.status === 'unread' || i.status === 'reminded';
+        return i.platform.toLowerCase() === filter;
+      });
+
+      const stats = {
+        total: items.length,
+        unread: items.filter(i => i.status === 'unread' || i.status === 'reminded').length,
+        read: items.filter(i => i.status === 'read').length,
+        saved: items.length * 6,
+      };
+
+      return `
+        <header class="header">
+          <div class="header-top">
+            <div class="logo">Khulasa<span class="logo-badge">خلاصة</span></div>
+            <div class="header-actions">
+              <button class="btn-icon" data-action="toggle-lang">${APP_STATE.lang === 'en' ? 'ع' : 'EN'}</button>
+              <button class="btn-icon" data-action="open-add" style="background:var(--accent);color:#fff;border-color:var(--accent);">+</button>
+            </div>
+          </div>
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Saved</div>
+              <div class="stat-value">${stats.total}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Unread</div>
+              <div class="stat-value" style="color:var(--accent)">${stats.unread}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Read</div>
+              <div class="stat-value" style="color:var(--green)">${stats.read}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Saved</div>
+              <div class="stat-value">${stats.saved}m</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="filters">
+          ${['all', 'unread', 'tiktok', 'x', 'reddit'].map(f => `
+            <button class="filter-btn ${filter === f ? 'active' : ''}" data-filter="${f}">
+              ${f === 'all' ? 'All' : f === 'unread' ? 'Unread' : f === 'tiktok' ? 'TikTok' : f === 'x' ? 'X' : 'Reddit'}
+            </button>
+          `).join('')}
+        </div>
+
+        <div class="content-list">
+          ${filtered.length === 0 ? `
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <div class="empty-title">Nothing here yet</div>
+              <div class="empty-sub">Tap + to save your first link</div>
+            </div>
+          ` : filtered.map((item, idx) => `
+            <div class="content-card ${expandedId === item.id ? 'expanded' : ''}" 
+                 data-id="${item.id}" data-action="toggle-card"
+                 style="animation-delay: ${idx * 0.05}s">
+              <div class="card-header">
+                <div class="platform-icon ${getPlatformClass(item.platform)}">
+                  ${getPlatformIcon(item.platform)}
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div class="card-meta">
+                    <span class="card-platform">${item.platform} · ${item.contentType || 'link'}</span>
+                    <div class="card-status">
+                      <span class="status-dot ${item.status}"></span>
+                      <span style="color:${getStatusColor(item.status)}">${getStatusLabel(item.status)}</span>
+                    </div>
+                  </div>
+                  <div class="card-title">${item.title}</div>
+                  <div class="card-info">
+                    <span>${timeAgo(item.savedAt)}</span>
+                    <span>·</span>
+                    <span>${item.readTime || '~2 min'}</span>
+                    ${item.status !== 'read' && item.reminderAt ? '<span>· ⏰</span>' : ''}
+                  </div>
+                </div>
+              </div>
+              ${expandedId === item.id ? `
+                <div class="summary-panel">
+                  <div class="summary-section">
+                    <div class="summary-lang">🇬🇧 English Summary</div>
+                    <div class="summary-text">${item.summaryEn}</div>
+                  </div>
+                  <div class="summary-section">
+                    <div class="summary-lang">🇸🇦 ملخص عربي</div>
+                    <div class="summary-text ar">${item.summaryAr}</div>
+                  </div>
+                  <div class="card-actions">
+                    ${item.status !== 'read' ? `
+                      <button class="btn-action primary" data-action="mark-read" data-id="${item.id}">✓ Read</button>
+                    ` : ''}
+                    <button class="btn-action" data-action="open-url" data-url="${item.url}">🔗 Open</button>
+                    ${item.status !== 'read' ? `
+                      <button class="btn-action" data-action="remind-later" data-id="${item.id}">⏰ Later</button>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderSettings() {
+      const { settings } = APP_STATE;
+      return `
+        <header class="header">
+          <div class="header-top">
+            <div class="logo">Settings</div>
+            <button class="btn-icon" data-action="go-home">✕</button>
+          </div>
+        </header>
+        <div class="settings-view">
+          <div class="setting-group">
+            <div class="setting-label">Reminders</div>
+            <div class="setting-row">
+              <span>Remind after</span>
+              <div style="display:flex;gap:6px;">
+                ${[1, 4, 8, 24].map(h => `
+                  <button class="reminder-opt ${settings.reminderHours === h ? 'active' : ''}" 
+                          data-action="set-reminder" data-hours="${h}"
+                          style="padding:6px 12px;font-size:13px;">
+                    ${h}h
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label">Summaries</div>
+            <div class="setting-row">
+              <span>Bilingual (EN + AR)</span>
+              <button class="toggle ${settings.bilingualSummary ? 'on' : ''}" data-action="toggle-bilingual"></button>
+            </div>
+            <div class="setting-row">
+              <span>Auto-summarize on save</span>
+              <button class="toggle ${settings.autoSummarize ? 'on' : ''}" data-action="toggle-auto"></button>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label">Backend</div>
+            <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+              <span>API Server URL</span>
+              <input class="input-field" style="margin:0" value="${API_BASE}" data-action="api-url" placeholder="https://your-app.onrender.com">
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <div class="setting-label">Data</div>
+            <div class="setting-row">
+              <span>Clear all saved content</span>
+              <button class="btn-action" data-action="clear-data" style="flex:0;color:var(--red);border-color:var(--red);">Clear</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBottomNav() {
+      const { view } = APP_STATE;
+      return `
+        <nav class="bottom-nav">
+          <button class="nav-item ${view === 'home' ? 'active' : ''}" data-action="go-home">
+            <span class="nav-icon">📋</span>
+            Queue
+          </button>
+          <button class="nav-item" data-action="open-add">
+            <span class="nav-icon" style="font-size:28px;margin-top:-8px;">⊕</span>
+            Save
+          </button>
+          <button class="nav-item ${view === 'settings' ? 'active' : ''}" data-action="go-settings">
+            <span class="nav-icon">⚙️</span>
+            Settings
+          </button>
+        </nav>
+      `;
+    }
+
+    function renderAddModal() {
+      return `
+        <div class="modal-overlay" data-action="close-modal">
+          <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-handle"></div>
+            <h2>Save Content</h2>
+            <p>Paste a link from TikTok, X, Reddit, YouTube...</p>
+            <input class="input-field" id="url-input" placeholder="Paste URL here..." dir="ltr" autofocus>
+            <div class="setting-label" style="margin-bottom:8px;">⏰ Remind me in</div>
+            <div class="reminder-options">
+              ${[1, 4, 8, 24].map(h => `
+                <button class="reminder-opt ${APP_STATE.settings.reminderHours === h ? 'active' : ''}"
+                        data-action="modal-reminder" data-hours="${h}">${h === 24 ? '1d' : h + 'h'}</button>
+              `).join('')}
+            </div>
+            <button class="btn-submit" id="btn-save-link">Save & Summarize</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ─── Event Handling ──────────────────────────────────────────
+    function attachEvents() {
+      document.querySelectorAll('[data-action]').forEach(el => {
+        const action = el.dataset.action;
+
+        if (action === 'toggle-card') {
+          el.addEventListener('click', (e) => {
+            if (e.target.closest('[data-action="mark-read"]') ||
+                e.target.closest('[data-action="open-url"]') ||
+                e.target.closest('[data-action="remind-later"]')) return;
+            const id = el.dataset.id;
+            APP_STATE.expandedId = APP_STATE.expandedId === id ? null : id;
+            render();
+          });
+        }
+
+        if (action === 'mark-read') {
+          el.addEventListener('click', () => {
+            const id = el.dataset.id;
+            const item = APP_STATE.items.find(i => i.id === id);
+            if (item) item.status = 'read';
+            saveItems();
+            showToast('✅ Marked as read');
+            render();
+          });
+        }
+
+        if (action === 'open-url') {
+          el.addEventListener('click', () => {
+            window.open(el.dataset.url, '_blank');
+          });
+        }
+
+        if (action === 'remind-later') {
+          el.addEventListener('click', () => {
+            const id = el.dataset.id;
+            const item = APP_STATE.items.find(i => i.id === id);
+            if (item) {
+              item.status = 'reminded';
+              item.reminderAt = new Date(Date.now() + APP_STATE.settings.reminderHours * 3600000).toISOString();
+            }
+            saveItems();
+            showToast('⏰ Reminder set');
+            render();
+          });
+        }
+
+        if (action === 'toggle-lang') {
+          el.addEventListener('click', () => {
+            APP_STATE.lang = APP_STATE.lang === 'en' ? 'ar' : 'en';
+            render();
+          });
+        }
+
+        if (action === 'open-add') {
+          el.addEventListener('click', () => {
+            APP_STATE.showAddModal = true;
+            render();
+            setTimeout(() => {
+              const input = document.getElementById('url-input');
+              if (input) input.focus();
+            }, 100);
+          });
+        }
+
+        if (action === 'close-modal') {
+          el.addEventListener('click', () => {
+            APP_STATE.showAddModal = false;
+            render();
+          });
+        }
+
+        if (action === 'go-home') {
+          el.addEventListener('click', () => {
+            APP_STATE.view = 'home';
+            render();
+          });
+        }
+
+        if (action === 'go-settings') {
+          el.addEventListener('click', () => {
+            APP_STATE.view = 'settings';
+            render();
+          });
+        }
+
+        if (action === 'set-reminder' || action === 'modal-reminder') {
+          el.addEventListener('click', () => {
+            APP_STATE.settings.reminderHours = parseInt(el.dataset.hours);
+            saveSettings();
+            render();
+          });
+        }
+
+        if (action === 'toggle-bilingual') {
+          el.addEventListener('click', () => {
+            APP_STATE.settings.bilingualSummary = !APP_STATE.settings.bilingualSummary;
+            saveSettings();
+            render();
+          });
+        }
+
+        if (action === 'toggle-auto') {
+          el.addEventListener('click', () => {
+            APP_STATE.settings.autoSummarize = !APP_STATE.settings.autoSummarize;
+            saveSettings();
+            render();
+          });
+        }
+
+        if (action === 'clear-data') {
+          el.addEventListener('click', () => {
+            if (confirm('Clear all saved content?')) {
+              APP_STATE.items = [];
+              saveItems();
+              showToast('🗑 All content cleared');
+              render();
+            }
+          });
+        }
+      });
+
+      // Filter buttons
+      document.querySelectorAll('[data-filter]').forEach(el => {
+        el.addEventListener('click', () => {
+          APP_STATE.filter = el.dataset.filter;
+          render();
+        });
+      });
+
+      // Save link button
+      const saveBtn = document.getElementById('btn-save-link');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+          const input = document.getElementById('url-input');
+          const url = (input?.value || '').trim();
+          if (!url) return;
+
+          saveBtn.textContent = 'Processing...';
+          saveBtn.disabled = true;
+
+          const result = await fetchAndSummarize(url);
+
+          const newItem = {
+            id: 'k_' + Date.now(),
+            url,
+            platform: result.platform || 'Other',
+            title: result.title || `Saved from ${url.substring(0, 30)}...`,
+            savedAt: new Date().toISOString(),
+            status: 'unread',
+            reminderAt: new Date(Date.now() + APP_STATE.settings.reminderHours * 3600000).toISOString(),
+            summaryEn: result.summaryEn || result.summary_en || 'Processing...',
+            summaryAr: result.summaryAr || result.summary_ar || '...جاري المعالجة',
+            contentType: result.contentType || result.content_type || 'link',
+            readTime: result.readTime || result.read_time_summary || '~2 min',
+          };
+
+          APP_STATE.items.unshift(newItem);
+          saveItems();
+          APP_STATE.showAddModal = false;
+          APP_STATE.expandedId = newItem.id;
+          showToast('✅ Saved & summarized!');
+          render();
+        });
+      }
+
+      // API URL setting
+      const apiInput = document.querySelector('[data-action="api-url"]');
+      if (apiInput) {
+        apiInput.addEventListener('change', (e) => {
+          localStorage.setItem('khulasa_api', e.target.value);
+          showToast('🔗 API URL updated');
+        });
+      }
+    }
+
+    // ─── Reminder Checker ────────────────────────────────────────
+    function checkReminders() {
+      const now = Date.now();
+      APP_STATE.items.forEach(item => {
+        if (item.status === 'unread' && item.reminderAt) {
+          if (new Date(item.reminderAt).getTime() <= now) {
+            item.status = 'reminded';
+            // Push notification if permission granted
+            if (Notification.permission === 'granted') {
+              new Notification('خلاصة — Khulasa', {
+                body: `📄 ${item.title}\nYou saved this but haven't read it yet!`,
+                icon: 'icon-192.png',
+                tag: item.id,
+              });
+            }
+          }
+        }
+      });
+      saveItems();
+    }
+
+    // ─── Init ────────────────────────────────────────────────────
+    function init() {
+      loadSettings();
+      loadItems();
+      seedDemoData();
+      render();
+
+      // Check reminders every minute
+      setInterval(checkReminders, 60000);
+
+      // Request notification permission
+      if ('Notification' in window && Notification.permission === 'default') {
+        setTimeout(() => Notification.requestPermission(), 3000);
+      }
+
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
