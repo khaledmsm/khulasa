@@ -122,6 +122,7 @@ Respond ONLY with this JSON (no markdown, no extra text):
         "claude-3-haiku-20240307",
     ]
     
+    last_error = ""
     for model_name in MODELS_TO_TRY:
         try:
             message = client.messages.create(
@@ -134,40 +135,35 @@ Respond ONLY with this JSON (no markdown, no extra text):
             print(f"  ✅ Used model: {model_name}")
             return json.loads(text)
         except Exception as e:
-            error_msg = str(e)
-            print(f"  ⚠️ Model {model_name} failed: {error_msg[:80]}")
-            if "model" not in error_msg.lower() and "not_found" not in error_msg.lower():
-                # Not a model error, don't try other models
+            last_error = str(e)
+            print(f"  ⚠️ Model {model_name} failed: {last_error[:80]}")
+            if "model" not in last_error.lower() and "not_found" not in last_error.lower():
                 break
             continue
     
-    # All models failed
-    except Exception as e:
-        error_msg = str(e)
-        print(f"  ⚠️ Summarization error: {error_msg}")
-        
-        # Give helpful error messages
-        if "credit" in error_msg.lower() or "billing" in error_msg.lower():
-            en_msg = "Anthropic API needs credit. Add funds at console.anthropic.com/billing"
-            ar_msg = "API يحتاج رصيد. أضف رصيد في console.anthropic.com/billing"
-        elif "invalid" in error_msg.lower() and "key" in error_msg.lower():
-            en_msg = "Invalid API key. Check ANTHROPIC_API_KEY in Render environment variables."
-            ar_msg = "مفتاح API غير صالح. تحقق من المتغيرات في Render."
-        elif "model" in error_msg.lower():
-            en_msg = "Model not available. Updating..."
-            ar_msg = "النموذج غير متاح. جاري التحديث..."
-        else:
-            en_msg = f"Error: {error_msg[:150]}"
-            ar_msg = "حدث خطأ في إنشاء الملخص. حاول مرة أخرى."
-        
-        return {
-            "title_clean": content["title"],
-            "summary_en": en_msg,
-            "summary_ar": ar_msg,
-            "content_type": "link",
-            "read_time_original": "?",
-            "read_time_summary": "~1 min",
-        }
+    # All models failed — return helpful error
+    error_msg = last_error
+    if "credit" in error_msg.lower() or "billing" in error_msg.lower():
+        en_msg = "Anthropic API needs credit. Add funds at console.anthropic.com/billing"
+        ar_msg = "API يحتاج رصيد. أضف رصيد في console.anthropic.com/billing"
+    elif "invalid" in error_msg.lower() and "key" in error_msg.lower():
+        en_msg = "Invalid API key. Check ANTHROPIC_API_KEY in Render environment variables."
+        ar_msg = "مفتاح API غير صالح. تحقق من المتغيرات في Render."
+    elif "model" in error_msg.lower():
+        en_msg = "Model not available. Updating..."
+        ar_msg = "النموذج غير متاح. جاري التحديث..."
+    else:
+        en_msg = f"Error: {error_msg[:150]}"
+        ar_msg = "حدث خطأ في إنشاء الملخص. حاول مرة أخرى."
+    
+    return {
+        "title_clean": content["title"],
+        "summary_en": en_msg,
+        "summary_ar": ar_msg,
+        "content_type": "link",
+        "read_time_original": "?",
+        "read_time_summary": "~1 min",
+    }
 
 
 # ─── HTTP Server ──────────────────────────────────────────────────
